@@ -90,4 +90,37 @@ describe("wrap", () => {
       expect.objectContaining({ tool: "readFile" }),
     )
   })
+
+  it("logs tool_relational_defaults_applied when a default is injected", async () => {
+    const logger = { info: vi.fn(), warn: vi.fn() }
+    const tool = wrap({
+      name: "readFile",
+      description: "",
+      schema,
+      execute: async () => "ok",
+      logger,
+      relationalDefaults: [{ ifPresent: "limit", thenDefault: { offset: 0 } }],
+    })
+    await tool.execute({ path: "foo.txt", limit: 50 })
+    expect(logger.info).toHaveBeenCalledWith(
+      "tool_relational_defaults_applied",
+      expect.objectContaining({ tool: "readFile" }),
+    )
+  })
+
+  it("returns a model-readable string when rawInput is an array", async () => {
+    const execute = vi.fn()
+    const tool = wrap({ name: "readFile", description: "", schema, execute })
+    const result = await tool.execute(["foo.txt"])
+    expect(typeof result).toBe("string")
+    expect(execute).not.toHaveBeenCalled()
+  })
+
+  it("does not log on a clean valid call", async () => {
+    const logger = { info: vi.fn(), warn: vi.fn() }
+    const tool = wrap({ name: "readFile", description: "", schema, execute: async () => "ok", logger })
+    await tool.execute({ path: "foo.txt" })
+    expect(logger.info).not.toHaveBeenCalled()
+    expect(logger.warn).not.toHaveBeenCalled()
+  })
 })
