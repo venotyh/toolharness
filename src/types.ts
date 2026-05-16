@@ -10,6 +10,14 @@ export interface Logger {
   warn(msg: string, meta?: Record<string, unknown>): void
 }
 
+export interface BaseDefinition {
+  name: string
+  description: string
+  inputSchema: Record<string, unknown>
+}
+
+export type ToolAdapter<TDef> = (base: BaseDefinition) => TDef
+
 // Unwraps markdown auto-links that bleed through from chat prior:
 //   "[notes.md](http://notes.md)" → "notes.md"
 export const pathString = () =>

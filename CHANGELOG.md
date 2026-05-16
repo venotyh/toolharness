@@ -7,6 +7,11 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/). Thi
 ## [Unreleased]
 
 ### Added
+- `anthropicAdapter` and `openaiAdapter` — built-in provider adapters; `openaiAdapter` targets the OpenAI-compatible format used by DeepSeek and others
+- `BaseDefinition` interface and `ToolAdapter<TDef>` type for building custom provider adapters
+- `AnthropicToolDefinition` and `OpenAIToolDefinition` plain TypeScript interfaces (no SDK import required)
+- `wrap()` accepts optional `adapter` parameter (`ToolAdapter<TDef>`); defaults to `anthropicAdapter` for backward compatibility
+- Tests for `wrap()` with `openaiAdapter` — definition shape, repair pipeline, and failure handling
 - Tests for `pathString()` — plain passthrough, markdown auto-link stripping, empty string, and partial bracket patterns
 - Test for `tool_relational_defaults_applied` log event in `wrap()`
 - Test for array `rawInput` rejection in `wrap()`
@@ -14,6 +19,12 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/). Thi
 - Test for `repair()` when a valid-JSON-but-non-array string falls through from `stringify_parse` to `string_to_array`
 - Test for `repair()` repairing multiple fields in a single call
 - Test documenting that `null_drop` does not apply to nested paths (`isOptionalField` is shallow-only)
+
+### Changed
+- `WrappedTool` is now generic (`WrappedTool<TDef>`); existing code using the default adapter is unaffected
+
+### Removed
+- `@anthropic-ai/sdk` peer dependency — the library no longer imports from the SDK; provider types are defined inline
 
 ## [0.1.0] — 2026-05-16
 

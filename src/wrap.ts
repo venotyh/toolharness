@@ -1,9 +1,9 @@
 import { z, ZodObject, ZodRawShape } from "zod"
 import { zodToJsonSchema } from "zod-to-json-schema"
-import type Anthropic from "@anthropic-ai/sdk"
 import { repair } from "./repair"
 import { applyRelationalDefaults } from "./relational"
-import type { RelationalDefault, Logger } from "./types"
+import type { RelationalDefault, Logger, BaseDefinition, ToolAdapter } from "./types"
+import { anthropicAdapter, type AnthropicToolDefinition } from "./adapters"
 
 export interface WrapOptions<S extends ZodObject<ZodRawShape>> {
   name: string
@@ -14,21 +14,29 @@ export interface WrapOptions<S extends ZodObject<ZodRawShape>> {
   logger?: Logger
 }
 
-export interface WrappedTool {
-  definition: Anthropic.Tool
+export interface WrappedTool<TDef> {
+  definition: TDef
   execute: (rawInput: unknown) => Promise<unknown>
 }
 
-export function wrap<S extends ZodObject<ZodRawShape>>(options: WrapOptions<S>): WrappedTool {
-  const { name, description, schema, execute, relationalDefaults = [], logger } = options
+export function wrap<S extends ZodObject<ZodRawShape>>(
+  options: WrapOptions<S> & { adapter?: undefined }
+): WrappedTool<AnthropicToolDefinition>
+
+export function wrap<S extends ZodObject<ZodRawShape>, TDef>(
+  options: WrapOptions<S> & { adapter: ToolAdapter<TDef> }
+): WrappedTool<TDef>
+
+export function wrap<S extends ZodObject<ZodRawShape>, TDef = AnthropicToolDefinition>(
+  options: WrapOptions<S> & { adapter?: ToolAdapter<TDef> }
+): WrappedTool<TDef> {
+  const { name, description, schema, execute, relationalDefaults = [], logger, adapter } = options
 
   const { $schema: _$schema, ...inputSchema } = zodToJsonSchema(schema) as Record<string, unknown>
 
-  const definition: Anthropic.Tool = {
-    name,
-    description,
-    input_schema: inputSchema as Anthropic.Tool["input_schema"],
-  }
+  const base: BaseDefinition = { name, description, inputSchema }
+  const resolvedAdapter = (adapter ?? anthropicAdapter) as ToolAdapter<TDef>
+  const definition = resolvedAdapter(base)
 
   async function executeWrapped(rawInput: unknown): Promise<unknown> {
     if (rawInput == null || typeof rawInput !== "object" || Array.isArray(rawInput)) {
