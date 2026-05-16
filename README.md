@@ -1,4 +1,4 @@
-# toolharness
+# safewrap
 
 Runtime repair layer for Anthropic tool-calling failures.
 
@@ -7,7 +7,7 @@ LLM tool-call failures are overwhelmingly a harness problem, not a model capabil
 ## Install
 
 ```sh
-npm install toolharness
+npm install safewrap
 # peer dependency
 npm install zod
 ```
@@ -17,7 +17,7 @@ npm install zod
 ```typescript
 import Anthropic from "@anthropic-ai/sdk"
 import { z } from "zod"
-import { wrap, pathString } from "toolharness"
+import { wrap, pathString } from "safewrap"
 
 // Default: Anthropic format
 const readFile = wrap({
@@ -38,7 +38,7 @@ const readFile = wrap({
 })
 
 // OpenAI / DeepSeek format — pass openaiAdapter
-import { openaiAdapter } from "toolharness"
+import { openaiAdapter } from "safewrap"
 import OpenAI from "openai"
 
 const readFileOAI = wrap({
@@ -109,7 +109,7 @@ wrap({
 Two built-in adapters are exported:
 
 ```typescript
-import { anthropicAdapter, openaiAdapter } from "toolharness"
+import { anthropicAdapter, openaiAdapter } from "safewrap"
 // anthropicAdapter → { name, description, input_schema }
 // openaiAdapter    → { type: "function", function: { name, description, parameters } }
 ```
@@ -117,7 +117,7 @@ import { anthropicAdapter, openaiAdapter } from "toolharness"
 Custom adapters implement `ToolAdapter<TDef>`:
 
 ```typescript
-import type { ToolAdapter, BaseDefinition } from "toolharness"
+import type { ToolAdapter, BaseDefinition } from "safewrap"
 
 const myAdapter: ToolAdapter<MyProviderTool> = (base: BaseDefinition) => ({
   // map base.name, base.description, base.inputSchema to your provider's format

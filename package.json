@@ -1,5 +1,5 @@
 {
-  "name": "toolharness",
+  "name": "safewrap",
   "version": "0.1.0",
   "description": "Runtime repair layer for Anthropic tool-calling failures",
   "type": "module",
