@@ -3,7 +3,7 @@
 ## Commands
 
 ```sh
-pnpm test        # vitest run (33 tests)
+pnpm test        # vitest run (36 tests)
 pnpm dev         # vitest watch mode
 pnpm build       # tsup → dist/ (CJS + ESM + .d.ts)
 ```
@@ -16,7 +16,8 @@ src/
   wrap.ts        wrap() — main entry point
   repair.ts      4 shape repairs + path helpers
   relational.ts  applyRelationalDefaults()
-  types.ts       RelationalDefault, Logger types + pathString()
+  types.ts       RelationalDefault, Logger, BaseDefinition, ToolAdapter types + pathString()
+  adapters.ts    anthropicAdapter, openaiAdapter + AnthropicToolDefinition, OpenAIToolDefinition
 tests/
   repair.test.ts
   relational.test.ts
@@ -52,7 +53,7 @@ Key invariant: **valid inputs are never touched** — repair only runs at paths 
 ## Key decisions
 
 - **Zod only** — no adapter layer for JSON Schema or other validators
-- **Anthropic SDK only** — `wrap()` produces `Anthropic.Tool`; `input_schema` is derived from the Zod schema via `zod-to-json-schema`
+- **Provider-agnostic via adapters** — `wrap()` accepts an optional `adapter` parameter (defaults to `anthropicAdapter`); built-in adapters: `anthropicAdapter` (Anthropic format) and `openaiAdapter` (OpenAI/DeepSeek format); custom adapters implement `ToolAdapter<TDef>`
 - **null_drop is optional-only** — dropping null from a required field changes "wrong type" to "missing required" with no benefit; the error message is more useful left intact
 - **Repair order matters** — #2 (stringify_parse) must precede #4 (string_to_array) or `'["a","b"]'` becomes `['["a","b"]']`
 - **Return, don't throw** — `execute()` returns a model-readable string on unrecoverable failure; callers never need try/catch
@@ -63,4 +64,3 @@ Key invariant: **valid inputs are never touched** — repair only runs at paths 
 |---------|------|
 | `zod-to-json-schema` | derive `input_schema` from Zod schema |
 | `zod` | peer — schema definition and validation |
-| `@anthropic-ai/sdk` | peer — `Anthropic.Tool` type |

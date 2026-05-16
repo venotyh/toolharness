@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from "vitest"
 import { z } from "zod"
 import { wrap } from "../src/wrap"
+import { openaiAdapter } from "../src/adapters"
 
 const schema = z.object({
   path: z.string(),
@@ -122,5 +123,31 @@ describe("wrap", () => {
     await tool.execute({ path: "foo.txt" })
     expect(logger.info).not.toHaveBeenCalled()
     expect(logger.warn).not.toHaveBeenCalled()
+  })
+})
+
+describe("wrap with openaiAdapter", () => {
+  it("produces an OpenAI-compatible tool definition", () => {
+    const tool = wrap({ name: "readFile", description: "reads a file", schema, execute: async () => "ok", adapter: openaiAdapter })
+    expect(tool.definition.type).toBe("function")
+    expect(tool.definition.function.name).toBe("readFile")
+    expect(tool.definition.function.description).toBe("reads a file")
+    expect(tool.definition.function.parameters.type).toBe("object")
+  })
+
+  it("still repairs input and calls execute correctly", async () => {
+    const execute = vi.fn().mockResolvedValue("ok")
+    const tool = wrap({ name: "readFile", description: "", schema, execute, adapter: openaiAdapter })
+    await tool.execute({ path: "foo.txt", tags: '["a","b"]' })
+    expect(execute).toHaveBeenCalledWith(expect.objectContaining({ tags: ["a", "b"] }))
+  })
+
+  it("returns model-readable error on failure", async () => {
+    const execute = vi.fn()
+    const tool = wrap({ name: "readFile", description: "", schema, execute, adapter: openaiAdapter })
+    const result = await tool.execute({ limit: 10 })
+    expect(typeof result).toBe("string")
+    expect(result as string).toContain("readFile")
+    expect(execute).not.toHaveBeenCalled()
   })
 })

@@ -1,4 +1,6 @@
 export { wrap } from "./wrap"
 export { pathString } from "./types"
+export { anthropicAdapter, openaiAdapter } from "./adapters"
 export type { WrapOptions, WrappedTool } from "./wrap"
-export type { RelationalDefault, Logger } from "./types"
+export type { RelationalDefault, Logger, BaseDefinition, ToolAdapter } from "./types"
+export type { AnthropicToolDefinition, OpenAIToolDefinition } from "./adapters"

@@ -8,8 +8,8 @@ LLM tool-call failures are overwhelmingly a harness problem, not a model capabil
 
 ```sh
 npm install toolharness
-# peer dependencies
-npm install zod @anthropic-ai/sdk
+# peer dependency
+npm install zod
 ```
 
 ## Usage
@@ -19,6 +19,7 @@ import Anthropic from "@anthropic-ai/sdk"
 import { z } from "zod"
 import { wrap, pathString } from "toolharness"
 
+// Default: Anthropic format
 const readFile = wrap({
   name: "read_file",
   description: "Read the contents of a file",
@@ -36,10 +37,31 @@ const readFile = wrap({
   logger: console,
 })
 
+// OpenAI / DeepSeek format — pass openaiAdapter
+import { openaiAdapter } from "toolharness"
+import OpenAI from "openai"
+
+const readFileOAI = wrap({
+  name: "read_file",
+  description: "Read the contents of a file",
+  schema: z.object({ path: pathString(), limit: z.number().optional() }),
+  execute: async ({ path, limit }) => { /* your implementation */ },
+  adapter: openaiAdapter,
+})
+
 // Pass definition to Anthropic
+const client = new Anthropic()
 const response = await client.messages.create({
   model: "claude-opus-4-7",
-  tools: [readFile.definition],
+  tools: [readFile.definition],   // Anthropic.Tool shape
+  messages: [...],
+})
+
+// Or pass to DeepSeek / OpenAI
+const deepseek = new OpenAI({ baseURL: "https://api.deepseek.com", apiKey: "..." })
+const response2 = await deepseek.chat.completions.create({
+  model: "deepseek-chat",
+  tools: [readFileOAI.definition],  // OpenAI ChatCompletionTool shape
   messages: [...],
 })
 
@@ -77,10 +99,29 @@ wrap({
   execute: (input) => Promise<unknown>
   relationalDefaults?: Array<{ ifPresent: string; thenDefault: Record<string, unknown> }>
   logger?: { info(...): void; warn(...): void }  // optional; pino, winston, console, etc.
+  adapter?: ToolAdapter<TDef> // optional; defaults to anthropicAdapter
 }): {
-  definition: Anthropic.Tool  // pass to client.messages.create tools array
+  definition: TDef            // shape determined by adapter (Anthropic.Tool by default)
   execute: (rawInput: unknown) => Promise<unknown>
 }
+```
+
+Two built-in adapters are exported:
+
+```typescript
+import { anthropicAdapter, openaiAdapter } from "toolharness"
+// anthropicAdapter → { name, description, input_schema }
+// openaiAdapter    → { type: "function", function: { name, description, parameters } }
+```
+
+Custom adapters implement `ToolAdapter<TDef>`:
+
+```typescript
+import type { ToolAdapter, BaseDefinition } from "toolharness"
+
+const myAdapter: ToolAdapter<MyProviderTool> = (base: BaseDefinition) => ({
+  // map base.name, base.description, base.inputSchema to your provider's format
+})
 ```
 
 On unrecoverable failure, `execute` returns a model-readable string (no `Error:` prefix) so the model can self-correct and retry.
